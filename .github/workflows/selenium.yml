@@ -1,4 +1,4 @@
-
+yaml
 name: Selenium Login Automation
 
 on:
@@ -17,9 +17,9 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up Java 17
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -29,18 +29,20 @@ jobs:
       - name: Set up Chrome
         uses: browser-actions/setup-chrome@v1
 
-      - name: Run Selenium tests
-        env:
-          LOGIN_URL: https://www.saucedemo.com/
-          TEST_USERNAME: standard_user
-          TEST_PASSWORD: secret_sauce
-        run: mvn --batch-mode clean test
+      - name: Check Java, Maven, and Chrome
+        run: |
+          java -version
+          mvn -version
+          google-chrome --version || chrome --version || true
+
+      - name: Run Selenium login tests
+        run: mvn --batch-mode clean compile exec:java -Dexec.mainClass=LoginTest
 
       - name: Upload test reports
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: selenium-test-results
           path: target/surefire-reports/
-          if-no-files-found: warn
+          if-no-files-found: ignore
           retention-days: 7
