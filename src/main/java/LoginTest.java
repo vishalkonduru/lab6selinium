@@ -1,104 +1,90 @@
-package tests;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 
+import java.io.File;
 import java.time.Duration;
 
-import static org.junit.jupiter.api.Assertions.*;
+public class LoginTest {
 
-class LoginTest {
+    public static void main(String[] args) {
 
-    private WebDriver driver;
-    private WebDriverWait wait;
-
-    private final String loginUrl = System.getenv()
-            .getOrDefault("LOGIN_URL", "https://www.saucedemo.com/");
-
-    private final String username = System.getenv()
-            .getOrDefault("TEST_USERNAME", "standard_user");
-
-    private final String password = System.getenv()
-            .getOrDefault("TEST_PASSWORD", "secret_sauce");
-
-    @BeforeEach
-    void setUp() {
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--headless");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
 
-        driver = new ChromeDriver(options);
-        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        WebDriver driver = new ChromeDriver(options);
 
-        driver.manage().window().maximize();
-        driver.get(loginUrl);
-    }
+        try {
+            File htmlFile = new File(
+                "src/main/resources/login.html"
+            );
 
-    @Test
-    void verifySuccessfulLogin() {
-        driver.findElement(By.id("user-name")).sendKeys(username);
-        driver.findElement(By.id("password")).sendKeys(password);
-        driver.findElement(By.id("login-button")).click();
+            String pageUrl = htmlFile.toURI().toString();
 
-        // Wait until the inventory page appears.
-        wait.until(ExpectedConditions.urlContains("inventory.html"));
+            driver.get(pageUrl);
 
-        assertTrue(
-                driver.getCurrentUrl().contains("inventory.html"),
-                "Login should succeed and open the inventory page"
-        );
+            WebDriverWait wait =
+                new WebDriverWait(driver, Duration.ofSeconds(5));
 
-        assertTrue(
-                wait.until(ExpectedConditions.visibilityOfElementLocated(
-                        By.className("inventory_list"))).isDisplayed(),
-                "Inventory should be displayed after successful login"
-        );
+            // Test 1: Valid login
+            driver.findElement(By.id("username"))
+                    .sendKeys("admin");
 
-        System.out.println("LOGIN SUCCESS: User logged in successfully.");
-    }
+            driver.findElement(By.id("password"))
+                    .sendKeys("admin123");
 
-    @Test
-    void verifyFailedLogin() {
-        driver.findElement(By.id("user-name"))
-                .sendKeys("invalid_user");
+            driver.findElement(By.id("loginButton")).click();
 
-        driver.findElement(By.id("password"))
-                .sendKeys("wrong_password");
-
-        driver.findElement(By.id("login-button")).click();
-
-        WebElement errorMessage = wait.until(
+            String successMessage = wait.until(
                 ExpectedConditions.visibilityOfElementLocated(
-                        By.cssSelector("[data-test='error']")
+                    By.id("message")
                 )
-        );
+            ).getText();
 
-        assertTrue(errorMessage.isDisplayed(),
-                "An error message should appear for invalid credentials");
+            if (successMessage.equals("Login successful!")) {
+                System.out.println(
+                    "TEST 1 PASSED: Login succeeded with valid credentials."
+                );
+            } else {
+                throw new AssertionError(
+                    "TEST 1 FAILED: " + successMessage
+                );
+            }
 
-        assertTrue(errorMessage.getText().contains(
-                "Username and password do not match"),
-                "The expected invalid-credentials message should appear");
+            // Test 2: Reload page for the invalid-login test
+            driver.navigate().refresh();
 
-        assertTrue(driver.getCurrentUrl().contains("saucedemo.com"),
-                "The user should remain on the login site");
+            driver.findElement(By.id("username"))
+                    .sendKeys("wronguser");
 
-        System.out.println("LOGIN FAILED AS EXPECTED: Invalid credentials rejected.");
-    }
+            driver.findElement(By.id("password"))
+                    .sendKeys("wrongpassword");
 
-    @AfterEach
-    void tearDown() {
-        if (driver != null) {
+            driver.findElement(By.id("loginButton")).click();
+
+            String errorMessage = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(
+                    By.id("message")
+                )
+            ).getText();
+
+            if (errorMessage.equals(
+                    "Invalid username or password!")) {
+                System.out.println(
+                    "TEST 2 PASSED: Invalid credentials were rejected."
+                );
+            } else {
+                throw new AssertionError(
+                    "TEST 2 FAILED: " + errorMessage
+                );
+            }
+
+        } finally {
             driver.quit();
         }
     }
