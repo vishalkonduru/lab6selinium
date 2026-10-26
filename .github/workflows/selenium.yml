@@ -1,4 +1,3 @@
-
 name: Selenium Login Automation
 
 on:
@@ -35,6 +34,9 @@ jobs:
           mvn -version
           google-chrome --version || chrome --version || true
 
+      - name: Create output directory for artifacts
+        run: mkdir -p test-output
+
       - name: Run Selenium login tests
         run: mvn --batch-mode clean compile exec:java -Dexec.mainClass=LoginTest
 
@@ -43,6 +45,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: selenium-test-results
-          path: target/surefire-reports/
+          path: |
+            target/surefire-reports/
+            test-output/
           if-no-files-found: ignore
           retention-days: 7
