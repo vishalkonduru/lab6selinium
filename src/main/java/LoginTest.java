@@ -6,6 +6,8 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.Duration;
 
 public class LoginTest {
@@ -18,6 +20,8 @@ public class LoginTest {
         options.addArguments("--disable-dev-shm-usage");
 
         WebDriver driver = new ChromeDriver(options);
+        boolean testPassed = false;
+        String failureReason = "";
 
         try {
             File htmlFile = new File(
@@ -84,8 +88,40 @@ public class LoginTest {
                 );
             }
 
+            testPassed = true;
+
+        } catch (Exception | AssertionError e) {
+            testPassed = false;
+            failureReason = e.getMessage();
+            e.printStackTrace();
+            throw e; // Re-throw so Maven knows the build failed if tests fail
         } finally {
             driver.quit();
+
+            // ==========================================
+            // GENERATE ARTIFACT REPORT FILE
+            // ==========================================
+            try {
+                File outputDir = new File("test-output");
+                if (!outputDir.exists()) {
+                    outputDir.mkdirs();
+                }
+                try (FileWriter writer = new FileWriter("test-output/results.txt")) {
+                    writer.write("Selenium Login Automation Test Results\n");
+                    writer.write("======================================\n");
+                    if (testPassed) {
+                        writer.write("Status: SUCCESS\n");
+                        writer.write("TEST 1 PASSED: Login succeeded with valid credentials.\n");
+                        writer.write("TEST 2 PASSED: Invalid credentials were rejected.\n");
+                    } else {
+                        writer.write("Status: FAILED\n");
+                        writer.write("Reason: " + failureReason + "\n");
+                    }
+                }
+                System.out.println("Test results report written to test-output/results.txt");
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
         }
     }
 }
