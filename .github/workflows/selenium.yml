@@ -1,3 +1,4 @@
+yaml
 name: Selenium Login Automation
 
 on:
@@ -18,7 +19,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Set up Java 17
+      - name: Set up Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -26,19 +27,14 @@ jobs:
           cache: maven
 
       - name: Set up Chrome
-        uses: browser-actions/setup-chrome@v2
-
-      - name: Check Java and Maven
-        run: |
-          java -version
-          mvn -version
+        uses: browser-actions/setup-chrome@v1
 
       - name: Run Selenium tests
         env:
           LOGIN_URL: https://www.saucedemo.com/
           TEST_USERNAME: standard_user
           TEST_PASSWORD: secret_sauce
-        run: mvn --batch-mode --no-transfer-progress clean test
+        run: mvn --batch-mode clean test
 
       - name: Upload test reports
         if: always()
